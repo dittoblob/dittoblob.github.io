@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Typing Generator</title>
+  <style>
+    body {
+      background: #111;
+      color: #0f0;
+      font-family: monospace;
+      padding: 2rem;
+      font-size: 1.5rem;
+    }
+    #obfuscated {
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <div id="obfuscated">Loading...</div>
+
+  <script>
+    let chinesePhrases = [];
+    let englishPhrases = [];
+
+    const obfuscatedEl = document.getElementById("obfuscated");
+    const chineseDot = '。';
+    const chineseComma = '，';
+
+    function getRandomChinesePhrase() {
+      let randomPhrase = chinesePhrases[Math.floor(Math.random() * chinesePhrases.length)];
+      if (Math.round(Math.random() * 5) === 4) {
+        randomPhrase += Math.random() < 0.5 ? chineseDot : chineseComma;
+      }
+      return randomPhrase;
+    }
+
+    function getRandomEnglishPhrase() {
+      return englishPhrases[Math.floor(Math.random() * englishPhrases.length)];
+    }
+
+    async function generateMegaMethod() {
+      if (!chinesePhrases.length || !englishPhrases.length) {
+        const [cnRsp, enRsp] = await Promise.all([
+          fetch("cn.json"), fetch("en.json")
+        ]);
+        chinesePhrases = await cnRsp.json();
+        englishPhrases = await enRsp.json();
+      }
+
+      const resultList = [];
+      const amount = Math.floor(Math.random() * englishPhrases.length) + 1;
+      const chineseList = [], englishList = [];
+
+      for (let i = 0; i < amount; i++) {
+        let chinese = getRandomChinesePhrase();
+        while (chineseList.includes(chinese) && chineseList.length <= chinesePhrases.length) {
+          chinese = getRandomChinesePhrase();
+        }
+
+        let english = getRandomEnglishPhrase();
+        while (englishList.includes(english) && englishList.length <= englishPhrases.length) {
+          english = getRandomEnglishPhrase();
+        }
+
+        chineseList.push(chinese);
+        englishList.push(english);
+        resultList.push(english + chinese + ((chinese.endsWith(chineseDot) || chinese.endsWith(chineseComma)) ? '' : ' '));
+      }
+
+      let ret = resultList.join('');
+      if (ret.endsWith(chineseComma)) {
+        ret = ret.slice(0, -1) + chineseDot;
+      }
+
+      return ret.trimEnd();
+    }
+
+    function typeText(text, i = 0) {
+      if (i === 0) obfuscatedEl.textContent = ""; // Clear before typing
+      if (i < text.length) {
+        obfuscatedEl.textContent += text[i];
+        setTimeout(() => typeText(text, i + 1), 20); // typing speed
+      } else {
+        setTimeout(startTypingCycle, 2000); // wait before generating new line
+      }
+    }
+
+    function startTypingCycle() {
+      generateMegaMethod().then(typeText).catch(error => {
+        console.error(`Could not obtain the mega method! ${error}`);
+      });
+    }
+
+    window.onload = () => {
+      startTypingCycle();
+    };
+  </script>
+</body>
+</html>
